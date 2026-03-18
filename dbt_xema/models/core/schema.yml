@@ -1,0 +1,27 @@
+version: 2
+
+models:
+  - name: fct_daily_weather
+    description: "Daily aggregated weather facts by station and variable. Materialized incrementally."
+    columns:
+      - name: daily_station_var_id
+        description: "Primary key for the daily aggregate (station + var + date)"
+        tests:
+          - unique
+          - not_null
+      - name: station_code
+        description: "Code of the weather station"
+      - name: variable_code
+        description: "Code of the weather variable"
+      - name: reading_date
+        description: "Date of the readings"
+        tests:
+          - not_null
+      - name: avg_daily_value
+        description: "Average measurement for the day"
+      - name: max_daily_value
+        description: "Maximum measurement for the day"
+      - name: min_daily_value
+        description: "Minimum measurement for the day"
+      - name: reading_count
+        description: "Total number of readings aggregated"

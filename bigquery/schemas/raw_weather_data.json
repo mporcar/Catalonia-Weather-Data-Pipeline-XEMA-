@@ -1,0 +1,42 @@
+[
+    {
+      "name": "id",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "codi_estacio",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "codi_variable",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "data_lectura",
+      "type": "TIMESTAMP",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "data_extrem",
+      "type": "TIMESTAMP",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "valor",
+      "type": "FLOAT",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "codi_estat",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "codi_base",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    }
+  ]

@@ -1,0 +1,27 @@
+version: 2
+
+sources:
+  - name: xema_raw
+    # In a real setup, avoid hardcoding project_id. We use an env var with a fallback.
+    database: "{{ env_var('GCP_PROJECT_ID', 'your-gcp-project-id') }}"
+    schema: "{{ env_var('BQ_DATASET', 'xema_weather') }}"
+    tables:
+      - name: raw_weather_data
+
+models:
+  - name: stg_weather_data
+    description: "Staging model for raw XEMA weather data. Cleans types and renames columns."
+    columns:
+      - name: record_id
+        description: "Unique identifier for each reading"
+        tests:
+          - unique
+          - not_null
+      - name: station_code
+        description: "Code of the weather station"
+      - name: variable_code
+        description: "Code of the measured variable (e.g., Temperature, Wind)"
+      - name: reading_timestamp
+        description: "Timestamp of the reading"
+      - name: reading_value
+        description: "Value of the meteorological variable"

@@ -1,0 +1,42 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.env
+.venv
+*.log
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+terraform.tfvars
+terraform.tfvars.json
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Credentials & Secrets
+credentials/
+*.json
+# allow specific non-secret json files
+!bigquery/schemas/*.json
+!.devcontainer/*.json
+!package.json
+
+# dbt
+dbt_xema/target/
+dbt_xema/dbt_packages/
+dbt_xema/logs/
+
+# Airflow
+logs/
+airflow.cfg
+airflow.db
+unittests.cfg
