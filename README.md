@@ -38,8 +38,8 @@ We use `python-dotenv` to manage secrets securely, meaning no hardcoded credenti
    ```
 2. Set your `GCP_PROJECT_ID` and `GCP_BUCKET_NAME`.
 3. Provide authentication:
-   - Provide the path to a Google Cloud Service Account JSON key in `GOOGLE_APPLICATION_CREDENTIALS`
-   - **OR** for GitHub Secrets/Codespaces, provide the entire JSON content as a single-line string in `GCP_SA_CREDENTIALS`. The Python ingestion script will automatically write this out to a safe temporary file at runtime.
+   - **Locally**: Provide the path to a Google Cloud Service Account JSON key in `GOOGLE_APPLICATION_CREDENTIALS`
+   - **GitHub Codespaces**: Create a GitHub Codespaces Repository Secret named `GCP_SA_KEY` containing the entire JSON content of your Service Account Key. The Codespaces setup script will automatically reconstruct this key in `/tmp/gcp-key.json` and configure `GOOGLE_APPLICATION_CREDENTIALS` for you.
    
 *Note: Never commit your `.env` or Service Account `credentials/` folder. They are excluded via `.gitignore`.*
 

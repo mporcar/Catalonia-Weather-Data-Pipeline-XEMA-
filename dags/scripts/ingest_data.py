@@ -1,7 +1,6 @@
 import argparse
 import logging
 import os
-import tempfile
 from datetime import datetime, timedelta
 import pandas as pd
 import requests
@@ -16,21 +15,7 @@ load_dotenv()
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-def setup_gcp_credentials():
-    """Sets up GCP credentials from either file path or JSON string."""
-    if os.getenv("GOOGLE_APPLICATION_CREDENTIALS"):
-        logger.info("Using GCP credentials from GOOGLE_APPLICATION_CREDENTIALS file path.")
-        return
-        
-    gcp_sa_creds = os.getenv("GCP_SA_CREDENTIALS")
-    if gcp_sa_creds:
-        logger.info("Found GCP_SA_CREDENTIALS in env. Creating temporary credentials file.")
-        fd, path = tempfile.mkstemp(suffix=".json")
-        with os.fdopen(fd, 'w') as f:
-            f.write(gcp_sa_creds)
-        os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = path
-    else:
-        logger.warning("No Google credentials found in environment. Defaulting to local auth if any.")
+
 
 def fetch_weather_data(target_date_str: str) -> pd.DataFrame:
     """Fetches weather data from the XEMA API for a specific date."""
@@ -78,8 +63,7 @@ def main():
     args = parser.parse_args()
     
     try:
-        # Load custom credentials logic for GitHub Actions/Codespaces
-        setup_gcp_credentials()
+        logger.info("Starting data ingestion job.")
         
         # 1. Fetch data
         df = fetch_weather_data(args.date)

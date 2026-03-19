@@ -15,6 +15,6 @@
       ]
     }
   },
-  "postCreateCommand": "pip install -r dags/scripts/requirements.txt && cd terraform && terraform init",
+  "postCreateCommand": "bash .devcontainer/setup_auth.sh && pip install -r dags/scripts/requirements.txt && cd terraform && terraform init",
   "remoteUser": "vscode"
 }

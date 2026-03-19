@@ -25,6 +25,7 @@ override.tf.json
 # Credentials & Secrets
 credentials/
 *.json
+*gcp-key*.json
 # allow specific non-secret json files
 !bigquery/schemas/*.json
 !.devcontainer/*.json
