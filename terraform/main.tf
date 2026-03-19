@@ -7,47 +7,28 @@ terraform {
   }
 }
 
+# Configure the Google Cloud provider
 provider "google" {
   project = var.project_id
-  region  = var.region
+  region  = var.location
 }
 
-# Service Account for the Data Pipeline
-resource "google_service_account" "pipeline_sa" {
-  account_id   = "xema-pipeline-sa"
-  display_name = "XEMA Pipeline Service Account"
-}
+# ------------------------------------------------------------------------------
+# Google Cloud Storage (Data Lake)
+# ------------------------------------------------------------------------------
 
-# IAM Role: Storage Admin
-resource "google_project_iam_member" "sa_storage_admin" {
-  project = var.project_id
-  role    = "roles/storage.admin"
-  member  = "serviceAccount:${google_service_account.pipeline_sa.email}"
-}
-
-# IAM Role: BigQuery Admin
-resource "google_project_iam_member" "sa_bq_admin" {
-  project = var.project_id
-  role    = "roles/bigquery.admin"
-  member  = "serviceAccount:${google_service_account.pipeline_sa.email}"
-}
-
-# Generates keys for local testing, though Workload Identity is preferred in production.
-resource "google_service_account_key" "pipeline_sa_key" {
-  service_account_id = google_service_account.pipeline_sa.name
-}
-
-# GCS Bucket (Data Lake)
+# GCS Bucket to store raw data
 resource "google_storage_bucket" "data_lake" {
+  # Ensures globally unique, lowercase name without spaces
   name          = var.bucket_name
-  location      = var.region
-  force_destroy = true
+  location      = var.location
+  force_destroy = true # Allows deletion of bucket even if it contains objects
 
   uniform_bucket_level_access = true
 
   lifecycle_rule {
     condition {
-      age = 365 # Retain raw data for 1 year
+      age = 365 # Retain data for 1 year
     }
     action {
       type = "Delete"
@@ -55,16 +36,14 @@ resource "google_storage_bucket" "data_lake" {
   }
 }
 
-# BigQuery Dataset
-resource "google_bigquery_dataset" "weather_dataset" {
-  dataset_id                  = var.bq_dataset_name
-  location                    = var.region
-  description                 = "Dataset for XEMA weather data pipeline"
-  delete_contents_on_destroy  = true
-}
+# ------------------------------------------------------------------------------
+# BigQuery Dataset (Data Warehouse)
+# ------------------------------------------------------------------------------
 
-# Output the Service Account Key (Handle with care in production!)
-output "service_account_private_key" {
-  value     = google_service_account_key.pipeline_sa_key.private_key
-  sensitive = true
+# BigQuery Dataset where dbt will create models and transformations
+resource "google_bigquery_dataset" "weather_dataset" {
+  dataset_id                 = var.bq_dataset_name
+  location                   = var.location
+  description                = "Dataset for XEMA weather data pipeline"
+  delete_contents_on_destroy = true # Allows deletion of dataset even if it contains tables
 }

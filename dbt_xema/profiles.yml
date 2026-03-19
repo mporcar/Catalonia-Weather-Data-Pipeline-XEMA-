@@ -1,0 +1,11 @@
+xema_weather:
+  target: dev
+  outputs:
+    dev:
+      type: bigquery
+      method: service-account
+      project: catalonia-weather-data-xema
+      dataset: xema_weather
+      threads: 4
+      keyfile: /path/to/service-account-key.json
+      location: europe-southwest1

@@ -3,14 +3,14 @@ variable "project_id" {
   type        = string
 }
 
-variable "region" {
-  description = "Google Cloud Region"
+variable "location" {
+  description = "Google Cloud Location/Region for resources"
   type        = string
-  default     = "europe-southwest1" # Madrid region, suitable for Spain data
+  default     = "europe-southwest1"
 }
 
 variable "bucket_name" {
-  description = "Name of the GCS Bucket to store raw data"
+  description = "Name for the Google Cloud Storage bucket (raw data lake)"
   type        = string
 }
 

@@ -4,6 +4,11 @@
   "features": {
     "ghcr.io/devcontainers/features/terraform:1": "latest"
   },
+  "remoteEnv": {
+    "AIRFLOW_HOME": "${containerWorkspaceFolder}/airflow_home",
+    "AIRFLOW__CORE__DAGS_FOLDER": "${containerWorkspaceFolder}/dags",
+    "AIRFLOW__CORE__LOAD_EXAMPLES": "False"
+  },
   "customizations": {
     "vscode": {
       "extensions": [
@@ -15,6 +20,7 @@
       ]
     }
   },
-  "postCreateCommand": "bash .devcontainer/setup_auth.sh && pip install -r dags/scripts/requirements.txt && cd terraform && terraform init",
+  "postCreateCommand": "bash .devcontainer/setup_auth.sh && pip install --no-cache-dir -r dags/scripts/requirements.txt && cd terraform && terraform init",
+  "postStartCommand": "airflow db init || echo 'Airflow DB already initialized'",
   "remoteUser": "vscode"
 }

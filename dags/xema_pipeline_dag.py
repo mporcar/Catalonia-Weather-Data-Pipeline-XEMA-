@@ -5,8 +5,12 @@ from airflow.operators.bash import BashOperator
 from airflow.providers.google.cloud.transfers.gcs_to_bigquery import GCSToBigQueryOperator
 from dotenv import load_dotenv
 
-# Load local .env config if running locally or in Codespaces
-load_dotenv()
+# Dynamically determine paths so it works in Codespaces without hardcoded /opt/airflow
+DAGS_FOLDER = os.path.dirname(os.path.abspath(__file__))
+PROJECT_ROOT = os.path.dirname(DAGS_FOLDER)
+
+# Load local .env config to ensure credentials and IDs are populated
+load_dotenv(os.path.join(PROJECT_ROOT, '.env'))
 
 # Read securely from environment. Do not fallback to hardcoded strings!
 GCP_PROJECT_ID = os.environ.get("GCP_PROJECT_ID")
@@ -15,7 +19,7 @@ BQ_DATASET = os.environ.get("BQ_DATASET", "xema_weather")
 
 # Enforce secure configuration
 if not GCP_PROJECT_ID or not GCP_BUCKET_NAME:
-    raise ValueError("Missing critical environment variables: GCP_PROJECT_ID and/or GCP_BUCKET_NAME.")
+    raise ValueError("Missing critical environment variables: GCP_PROJECT_ID and/or GCP_BUCKET_NAME. Please ensure your .env file is loaded.")
 
 default_args = {
     'owner': 'data_engineer',
@@ -39,7 +43,7 @@ with DAG(
     # Task 1: Fetch data from XEMA API and upload to GCS Data Lake
     ingest_to_gcs = BashOperator(
         task_id='ingest_data_to_gcs',
-        bash_command=f'python /opt/airflow/dags/scripts/ingest_data.py --date {{{{ ds }}}} --bucket {GCP_BUCKET_NAME}',
+        bash_command=f'python {PROJECT_ROOT}/dags/scripts/ingest_data.py --date {{{{ ds }}}} --bucket {GCP_BUCKET_NAME}',
     )
 
     # Task 2: Load Parquet from GCS to BigQuery Native Table
@@ -57,7 +61,7 @@ with DAG(
     # Task 3: Run dbt models to transform raw data
     run_dbt_models = BashOperator(
         task_id='run_dbt_transformations',
-        bash_command='cd /opt/airflow/dbt_xema && dbt run --profiles-dir . && dbt test --profiles-dir .',
+        bash_command=f'cd {PROJECT_ROOT}/dbt_xema && dbt run --profiles-dir . && dbt test --profiles-dir .',
     )
 
     ingest_to_gcs >> load_to_bq >> run_dbt_models

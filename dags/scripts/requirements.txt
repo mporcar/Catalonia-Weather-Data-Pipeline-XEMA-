@@ -1,5 +1,16 @@
+# Mantén estas versiones pero añade la restricción de NumPy
+numpy<2.0.0
 pandas==2.1.0
 requests==2.31.0
 google-cloud-storage==2.10.0
-pyarrow==13.0.0
+
+# PyArrow 13 tenía algunos conflictos conocidos con NumPy 2, 
+# subir a la 14 o 15 (dentro de la rama 1.x de NumPy) es más estable.
+pyarrow>=14.0.1
+
 python-dotenv==1.0.0
+apache-airflow==2.8.2
+apache-airflow-providers-google==10.15.0
+
+# Opcional: para quitar el aviso de Swagger UI en los logs
+connexion[swagger-ui]
