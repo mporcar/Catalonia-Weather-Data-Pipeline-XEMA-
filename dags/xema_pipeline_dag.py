@@ -50,7 +50,7 @@ with DAG(
     load_to_bq = GCSToBigQueryOperator(
         task_id='load_gcs_to_bq_staging',
         bucket=GCP_BUCKET_NAME,
-        source_objects=[f'raw/weather_data/data_lectura={{{{ ds }}}}/data.parquet'],
+        source_objects=[f'raw/weather_data/{{{{ ds }}}}/data.parquet'],
         destination_project_dataset_table=f'{GCP_PROJECT_ID}.{BQ_DATASET}.raw_weather_data',
         source_format='PARQUET',
         write_disposition='WRITE_APPEND',

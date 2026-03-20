@@ -7,5 +7,5 @@ xema_weather:
       project: catalonia-weather-data-xema
       dataset: xema_weather
       threads: 4
-      keyfile: /path/to/service-account-key.json
+      keyfile: "{{ env_var('GCP_SA_KEY') }}"
       location: europe-southwest1

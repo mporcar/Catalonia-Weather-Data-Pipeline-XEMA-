@@ -1,6 +1,10 @@
 #!/bin/bash
 set -e
 
+# Fix for Codespaces (proxy + CSRF issue)
+export AIRFLOW__WEBSERVER__ENABLE_PROXY_FIX=True
+export AIRFLOW__WEBSERVER__WTF_CSRF_ENABLED=False
+
 echo "========================================="
 echo "Initializing Airflow Environment"
 echo "========================================="

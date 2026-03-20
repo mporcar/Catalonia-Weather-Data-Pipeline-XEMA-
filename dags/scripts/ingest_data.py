@@ -69,7 +69,7 @@ def main():
         df = fetch_weather_data(args.date)
         
         # 2. Upload to GCS
-        destination_path = f"raw/weather_data/data_lectura={args.date}/data.parquet"
+        destination_path = f"raw/weather_data/{args.date}/data.parquet"
         upload_to_gcs(df, args.bucket, destination_path)
         
         logger.info("Ingestion job completed successfully.")
