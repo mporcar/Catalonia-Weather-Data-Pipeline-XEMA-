@@ -1,94 +1,169 @@
 # Catalonia Weather Data Pipeline (XEMA)
 
-This is an end-to-end real-world batch data data pipeline built on Google Cloud to ingest, process, and visualize real-time meteorological data from Catalonia (XEMA).
+## A. Project Overview
+This project is an end-to-end data engineering pipeline built on Google Cloud Platform. It ingests real-time meteorological data from the open data portal of Catalonia (XEMA API), stores it in a Google Cloud Storage (GCS) Data Lake, and loads it into a Google BigQuery Data Warehouse.
 
-## Architecture Components
-- **Data Source**: XEMA Meteorological Data (Open Data Catalonia)
+The pipeline is orchestrated with Apache Airflow and uses dbt (data build tool) to perform data transformations and build analytical models. Finally, the processed data can be visualized using Looker Studio.
+
+### Technologies Used
 - **Infrastructure as Code**: Terraform
-- **Ingestion code**: Python (requests, pandas)
-- **Data Lake Storage**: Google Cloud Storage (GCS)
-- **Data Warehouse**: Google BigQuery
+- **Cloud Provider**: Google Cloud Platform (GCS, BigQuery)
+- **Programming Language**: Python (pandas, requests)
 - **Orchestration Engine**: Apache Airflow
 - **Data Transformation**: dbt (data build tool)
-- **Visualization BI**: Looker Studio
+- **Visualization**: Looker Studio
 
-## Repository Structure
-```text
-catalonia-weather-pipeline/
-├── terraform/                # GCP Infrastructure (GCS, BigQuery, IAM)
-├── dags/                     # Airflow DAG for orchestration
-│   └── scripts/              # Python ingestion script fetching API data
-├── dbt_xema/                 # dbt transformations (staging and core data models)
-├── bigquery/                 # BigQuery external JSON table schemas
-└── README.md                 # Project documentation
+## B. Prerequisites
+To run this project, you need:
+- **Python 3.11** or higher.
+- A **Google Cloud Platform (GCP)** Account with an active Project.
+- A **Google Cloud Service Account** with permissions for:
+  - Google Cloud Storage Admin
+  - BigQuery Admin
+- A downloaded **JSON Key** for your Service Account.
+- **Terraform** installed (if running locally).
+- **Git**
+
+## C. Setup Instructions
+
+The setup process requires specific environment variables and authentication configurations.
+
+### 1. Clone the Repository
+Open a terminal and clone the repository:
+```bash
+git clone <your-repo-url>
+cd catalonia-weather-pipeline
+```
+*(Optional)* This repository supports **GitHub Codespaces**. You can launch it directly from GitHub to get an environment with Python 3.11, Terraform, and required dependencies pre-installed.
+
+### 2. Install Dependencies
+If you are running the project locally (not in Codespaces), install the necessary Python packages:
+```bash
+pip install -r dags/scripts/requirements.txt
 ```
 
-## Setup Instructions
+### 3. Configure Credentials & Environment (VERY IMPORTANT)
+The pipeline relies on several configuration files that you must create from their example templates.
 
-### 1. Environment & GitHub Codespaces Support
-This repository includes a `.devcontainer` and supports **GitHub Codespaces** for an instant development environment.
-- **Run in Codespaces**: Click "Code" -> "Codespaces" -> "New codespace" on GitHub. The IDE will boot with Python 3.11, Terraform, and extensions pre-configured.
-- **Run Locally**: Ensure you have Python 3.11 installed, clone the repository, and run `pip install -r dags/scripts/requirements.txt`.
+**Step 3.1: Configure Environment Variables**
+Copy the example environment file:
+```bash
+cp .env.example .env
+```
+Edit the `.env` file and set:
+- `GCP_PROJECT_ID`: Your exact GCP Project ID.
+- `GCP_BUCKET_NAME`: A globally unique name for your new GCS bucket.
 
-### 2. Configure Environment Variables & Secrets
-We use `python-dotenv` to manage secrets securely, meaning no hardcoded credentials inside scripts.
-1. Copy `.env.example` to `.env`:
-   ```bash
-   cp .env.example .env
-   ```
-2. Set your `GCP_PROJECT_ID` and `GCP_BUCKET_NAME`.
-3. Provide authentication:
-   - **Locally**: Provide the path to a Google Cloud Service Account JSON key in `GOOGLE_APPLICATION_CREDENTIALS`
-   - **GitHub Codespaces**: Create a GitHub Codespaces Repository Secret named `GCP_SA_KEY` containing the entire JSON content of your Service Account Key. The Codespaces setup script will automatically reconstruct this key in `/tmp/gcp-key.json` and configure `GOOGLE_APPLICATION_CREDENTIALS` for you.
-   
-*Note: Never commit your `.env` or Service Account `credentials/` folder. They are excluded via `.gitignore`.*
+**Step 3.2: GCP Authentication**
+You need to provide your Google Cloud Service Account JSON key to authenticate.
+- **For Local Development**:
+  Place your Service Account JSON key file in the `credentials/` folder (this folder is ignored by Git for security).
+  Edit your `.env` file and set the absolute path to your key:
+  ```env
+  GOOGLE_APPLICATION_CREDENTIALS=/absolute/path/to/catalonia-weather-pipeline/credentials/your-key.json
+  ```
+- **For GitHub Codespaces**:
+  Create a GitHub Codespaces Repository Secret named `GCP_SA_KEY` containing the entire JSON text of your key. Then, in the Codespaces terminal, run:
+  ```bash
+  bash .devcontainer/setup_auth.sh
+  ```
+  *(This correctly formats your key at `/tmp/gcp-key.json` and updates `GOOGLE_APPLICATION_CREDENTIALS`)*.
 
-### 3. Setup Google Cloud & Terraform
-1. Ensure your `.env` file or environment variables are sourced.
-2. Navigate to the `terraform/` directory.
-3. Initialize Terraform plugins:
-   ```bash
-   terraform init
-   ```
-4. Review the execution plan and apply the infrastructure. Pass the necessary variables dynamically from your environment:
-   ```bash
-   terraform apply -var="project_id=$GCP_PROJECT_ID" -var="bucket_name=$GCP_BUCKET_NAME"
-   ```
+**Step 3.3: Export Authentication Variable**
+For Terraform and dbt to detect your credentials in your current terminal session, export the variable manually:
+```bash
+# If running locally (update your path):
+export GOOGLE_APPLICATION_CREDENTIALS="/absolute/path/to/catalonia-weather-pipeline/credentials/your-key.json"
 
-### 4. Run Pipeline (Airflow Data Ingestion)
-1. Run Apache Airflow locally or in your Codespace.
-2. The `xema_daily_weather_pipeline` DAG securely reads environment variables `GCP_PROJECT_ID` and `GCP_BUCKET_NAME`.
-3. Ensure `.env` is loaded by Airflow natively, or export the variables in the terminal before running the Airflow scheduler.
-4. Manually trigger a DAG run through the Airflow Web UI to execute the extraction, load the data to Google Cloud Storage Data Lake, and insert it into BigQuery staging.
+# If in Codespaces:
+export GOOGLE_APPLICATION_CREDENTIALS="/tmp/gcp-key.json"
+```
 
-### 4. Data Transformations (dbt)
-The Airflow DAG executes dbt transformations automatically. However, you can run them manually to test the models:
-1. Navigate to the `dbt_xema/` directory.
-2. Make sure you copy `profiles.yml.example` to `~/.dbt/profiles.yml` or place it in the same directory and update your BigQuery project settings and service account keys.
-3. Validate connection:
-   ```bash
-   dbt debug --profiles-dir .
-   ```
-4. Run transformations and tests to build `fct_daily_weather`:
-   ```bash
-   dbt build --profiles-dir .
-   ```
+### 4. Setup Infrastructure with Terraform
+Use Terraform to deploy the GCS Data Lake bucket and BigQuery Dataset.
 
-### 5. View Dashboard (Looker Studio Guidelines)
-Once your BigQuery dataset is populated with the `fct_daily_weather` table, you can connect it easily to Google Looker Studio.
+```bash
+cd terraform
+cp terraform.tfvars.example terraform.tfvars
+```
+Edit `terraform.tfvars`:
+- Change `project_id` to match your GCP Project ID.
+- Change `bucket_name` to match the exact bucket name you set in your `.env` file.
 
-**Looker Studio Configuration:**
-1. Open Looker Studio and create a New Report.
-2. Add Data -> select BigQuery -> choose your Project, Dataset (`xema_weather`), and Table (`fct_daily_weather`).
+Initialize and apply the Terraform configuration:
+```bash
+terraform init
+terraform apply
+```
+Type `yes` when prompted.
 
-**Suggested Dashboard Tiles:**
-1. **Time Series Line Chart (Weather trends)**
-   - *Dimension*: `reading_date`
-   - *Breakdown Dimension*: `station_code`
-   - *Metric*: `avg_daily_value` (Aggregation: Average)
-   - *Insight*: Shows weather value fluctuations across different Catalonia stations over the last week.
-   
-2. **Categorical Distribution Bar Chart (Maximums by Station)**
-   - *Dimension*: `station_code`
-   - *Metric*: `max_daily_value` (Aggregation: Max)
-   - *Insight*: Highlights extreme high values recorded per station, allowing for quick region-based comparisons.
+### 5. Setup dbt (Data Build Tool) Profiles
+Airflow runs dbt commands for data transformation. You must configure the dbt connection profile to allow BigQuery access.
+
+```bash
+cd ../dbt_xema
+cp profiles.yml.example profiles.yml
+```
+Edit `profiles.yml` inside the `dbt_xema` directory:
+- Change `project: your-gcp-project-id` to your actual GCP Project ID.
+- Change `keyfile: /path/to/service-account-key.json` to the absolute path of your JSON key (e.g., `/tmp/gcp-key.json` for Codespaces, or the path inside your local `credentials/` folder).
+
+Verify the dbt connection:
+```bash
+dbt debug --profiles-dir .
+```
+Change back to the root directory for the next steps:
+```bash
+cd ..
+```
+
+## D. Running Airflow
+
+To start Apache Airflow locally or in your Codespace, use the provided startup script from the root of the project:
+```bash
+bash start_airflow.sh
+```
+
+**Accessing the Airflow UI:**
+- **Local**: Open your browser and go to `http://localhost:8080`
+- **Codespaces**: Go to the "Ports" tab in the bottom panel of VS Code and click the web/globe icon for port 8080.
+
+**Login Credentials:**
+- **Username**: `admin`
+- **Password**: `admin`
+
+## E. Running the Pipeline
+
+Once you are logged into the Airflow UI:
+1. Locate the DAG named `xema_daily_weather_pipeline`.
+2. Toggle the switch on the left from **Paused** to **Unpaused** (the switch will turn blue).
+3. Click the **Play button ▶️** on the right side and select **Trigger DAG**.
+
+### What the Pipeline Tasks Do:
+1. `ingest_data_to_gcs`: A Python script queries the XEMA API for the execution date, processes it, and uploads it as a Parquet file to the GCS Data Lake.
+2. `load_gcs_to_bq_staging`: Reads the Parquet file from GCS and dynamically appends or creates the raw data in BigQuery (`raw_weather_data`), partitioned by day.
+3. `run_dbt_transformations`: Executes `dbt run` and `dbt test` to execute SQL models on the raw BigQuery data, resulting in clean, analytical models like `fct_daily_weather`.
+
+## F. Debugging Section
+
+### Common Errors and Fixes
+
+**1. GCP Authentication Issues**
+- **Error:** `google.auth.exceptions.DefaultCredentialsError` or Permission Denied in Terraform/Airflow.
+- **Fix:** Ensure the `GOOGLE_APPLICATION_CREDENTIALS` environment variable is pointing to a valid Service Account JSON key path. Run `echo $GOOGLE_APPLICATION_CREDENTIALS` to verify your terminal can see it. Re-export it if necessary.
+
+**2. Missing Environment Variables inside Airflow**
+- **Error:** `ValueError: Missing critical environment variables: GCP_PROJECT_ID...`
+- **Fix:** Ensure your `.env` file is located precisely at the root of the project and that `GCP_PROJECT_ID` and `GCP_BUCKET_NAME` are not empty. 
+
+**3. Terraform Bucket Creation Error**
+- **Error:** `googleapi: Error 409: Your previous request to create the named bucket succeeded and you already own it.` or `Bucket name is already taken.`
+- **Fix:** GCS bucket names must be globally unique across *all* of Google Cloud. Edit `GCP_BUCKET_NAME` in `.env` and `bucket_name` in `terraform.tfvars` to a more unique name (e.g., append random numbers or initials) and restart step 4.
+
+**4. dbt Profile Error / Command Not Found**
+- **Error:** `Profile xema_weather target dev not found` or `File /path/to/service-account-key.json not found`
+- **Fix:** Ensure you have correctly copied `profiles.yml.example` to `profiles.yml` inside the `dbt_xema/` directory and replaced the placeholder project ID and keyfile paths with actual information. Also ensure your bash session has exported the variable correctly.
+
+**5. Airflow Login Issues in Codespaces**
+- **Error:** Getting CSRF Token errors or immediate logouts when attempting to log in on Codespaces.
+- **Fix:** This is a Codespaces proxy issue. The `start_airflow.sh` script applies proxy fixes (e.g., disables CSRF validation). Make sure you start Airflow via `bash start_airflow.sh` rather than manually calling `airflow webserver`. Ensure no stale zombie webserver processes are running.

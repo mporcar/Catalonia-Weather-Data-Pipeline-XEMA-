@@ -11,6 +11,7 @@ pyarrow>=14.0.1
 python-dotenv==1.0.0
 apache-airflow==2.8.2
 apache-airflow-providers-google==10.15.0
+dbt-bigquery>=1.7.0
 
 # Opcional: para quitar el aviso de Swagger UI en los logs
 connexion[swagger-ui]
