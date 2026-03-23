@@ -15,7 +15,7 @@ select
     date(cast(data_lectura as timestamp)) as reading_date,
     
     -- facts
-    cast(valor as float64) as reading_value,
+    cast(valor_lectura as float64) as reading_value,
     
     -- metadata
     cast(codi_estat as string) as status_code,
