@@ -2,7 +2,7 @@ version: 2
 
 sources:
   - name: xema_raw
-    database: "{{ env_var('GCP_PROJECT_ID', 'catalonia-weather-data-xema') }}"
+    database: "{{ env_var('GCP_PROJECT_ID') }}"
     schema: "{{ env_var('BQ_DATASET', 'xema_weather') }}"
     tables:
       - name: raw_weather_data

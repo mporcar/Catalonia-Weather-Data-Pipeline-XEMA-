@@ -39,7 +39,7 @@ with DAG(
     description='Daily ingestion of Catalonia weather data (XEMA) with dimension enrichment',
     schedule_interval='@daily',
     start_date=datetime(2026, 3, 1),
-    catchup=True,
+    catchup=False,
     tags=['xema', 'weather', 'gcp', 'dbt'],
     max_active_runs=3   # at most 3 days running simultaneously
 ) as dag:
@@ -52,7 +52,10 @@ with DAG(
         bash_command=(
             f'python {PROJECT_ROOT}/dags/scripts/ingest_data.py '
             f'--date {{{{ ds }}}} '
-            f'--bucket {GCP_BUCKET_NAME}'
+            f'--bucket {GCP_BUCKET_NAME} '
+            # Pass --skip-dims automatically for historical (non-today) runs
+            # so dimension tables are only fetched once per real day.
+            f'{{{{ "" if ds == macros.ds_format(macros.datetime.now().strftime("%Y-%m-%d"), "%Y-%m-%d", "%Y-%m-%d") else "--skip-dims" }}}}'
         ),
     )
 

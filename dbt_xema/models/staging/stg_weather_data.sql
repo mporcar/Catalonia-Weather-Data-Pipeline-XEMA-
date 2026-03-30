@@ -11,7 +11,7 @@ select
     cast(codi_variable as string)   as variable_code,
  
     -- timestamps: keep full precision for analytics
-    DATETIME(TIMESTAMP_MICROS(CAST(reading_timestamp/1000 AS INT64))) AS reading_datetime,
+    cast(reading_timestamp as timestamp) as reading_timestamp,
  
     -- date derived from timestamp — used for BQ partitioning
     date(cast(data_lectura as timestamp)) as reading_date,

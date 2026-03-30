@@ -38,7 +38,7 @@ select
 
     -- Temporal: date for partitioning, full timestamp for analytics
     stg.reading_date,
-    stg.reading_datetime,
+    stg.reading_timestamp,
 
     -- Station context
     sta.station_name,

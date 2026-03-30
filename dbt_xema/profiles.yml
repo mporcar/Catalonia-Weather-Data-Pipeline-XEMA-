@@ -4,8 +4,8 @@ xema_weather:
     dev:
       type: bigquery
       method: service-account
-      project: catalonia-weather-data-xema
-      dataset: xema_weather
+      project: "{{ env_var('GCP_PROJECT_ID') }}"
+      dataset: "{{ env_var('BQ_DATASET', 'xema_weather') }}"
       threads: 4
-      keyfile: "/tmp/gcp-key.json"
+      keyfile: "{{ env_var('GOOGLE_APPLICATION_CREDENTIALS') }}"
       location: europe-southwest1

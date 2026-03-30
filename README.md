@@ -1,52 +1,40 @@
 # Catalonia Weather Data Pipeline (XEMA)
 
-## A. Project Overview
-This project is an end-to-end data engineering pipeline built on Google Cloud Platform. It ingests real-time meteorological data from the open data portal of Catalonia (XEMA API), stores it in a Google Cloud Storage (GCS) Data Lake, and loads it into a Google BigQuery Data Warehouse.
+## 1. Project Overview
+- **Goal**: build an end-to-end data pipeline to ingest and transform meteorological data from Catalonia (Barcelona region) using the open XEMA API: https://analisi.transparenciacatalunya.cat/resource
+- **Stack**: Python, Apache Airflow, Google Cloud Storage, BigQuery, dbt, GitHub Codespaces
 
-The pipeline is orchestrated with Apache Airflow and uses dbt (data build tool) to perform data transformations and build analytical models. Finally, the processed data can be visualized using Looker Studio.
+## 2. Architecture
+The data pipeline extracts daily weather observations from the XEMA API, stores the raw data in Google Cloud Storage, loads it into BigQuery, and transforms it with dbt to create analytical tables.
 
-### Technologies Used
-- **Infrastructure as Code**: Terraform
-- **Cloud Provider**: Google Cloud Platform (GCS, BigQuery)
-- **Programming Language**: Python (pandas, requests)
-- **Orchestration Engine**: Apache Airflow
-- **Data Transformation**: dbt (data build tool)
-- **Visualization**: Looker Studio
-
-## B. Prerequisites
-To run this project, you need:
-- **Python 3.11** or higher.
-- A **Google Cloud Platform (GCP)** Account with an active Project.
-- A **Google Cloud Service Account** with permissions for:
-  - Google Cloud Storage Admin
-  - BigQuery Admin
-- A downloaded **JSON Key** for your Service Account.
-- **Terraform** installed (if running locally).
-- **Git**
-
-## C. Setup Instructions
-
-The setup process requires specific environment variables and authentication configurations.
-
-### 1. Clone the Repository
-Open a terminal and clone the repository:
-```bash
-git clone <your-repo-url>
-cd catalonia-weather-pipeline
-```
-*(Optional)* This repository supports **GitHub Codespaces**. You can launch it directly from GitHub to get an environment with Python 3.11, Terraform, and required dependencies pre-installed.
-
-### 2. Install Dependencies
-If you are running the project locally (not in Codespaces), install the necessary Python packages:
-```bash
-pip install -r dags/scripts/requirements.txt
+```text
+XEMA API → ingest_data.py → GCS (Data Lake)
+                                    ↓
+                             BigQuery (raw tables)
+                                    ↓
+                              dbt (staging views → fact tables)
 ```
 
-### 3. Configure Credentials & Environment (VERY IMPORTANT)
-The pipeline relies on several configuration files that you must create from their example templates.
+- **Airflow**: Orchestrates the workflow, scheduling daily ingestion and triggering dbt transformations.
+- **GCS**: Acts as the Data Lake, providing scalable cloud storage for all original raw data files.
+- **BigQuery**: Serves as the Data Warehouse for storing raw tables, staging views, and production models.
+- **dbt**: Cleans raw data and builds structured fact and dimension tables ready for analysis.
 
-**Step 3.1: Configure Environment Variables**
-Copy the example environment file:
+### Data Model
+- **Raw**: `raw_weather_data` (partitioned by day), `raw_dim_stations`, `raw_dim_variables`
+- **Staging**: `stg_weather_data`, `stg_dim_stations`, `stg_dim_variables` (views, type casting and renaming only)
+- **Core**: `fct_weather_readings` (minute-level, partitioned), `fct_daily_weather` (daily aggregates, lean)
+
+## Dashboard
+![Dashboard](./dashboard.png)
+
+[Dashboard](https://lookerstudio.google.com/reporting/60d47c01-1d29-480f-bf9b-0ff7a74127d6)
+
+## 3. Setup Instructions
+Step-by-step for GitHub Codespaces:
+
+1. Clone and open in Codespaces
+2. Copy and fill in environment variables:
 ```bash
 cp .env.example .env
 ```
@@ -79,7 +67,7 @@ export GOOGLE_APPLICATION_CREDENTIALS="/absolute/path/to/catalonia-weather-pipel
 export GOOGLE_APPLICATION_CREDENTIALS="/tmp/gcp-key.json"
 ```
 
-### 4. Setup Infrastructure with Terraform
+## 4. Setup Infrastructure with Terraform
 Use Terraform to deploy the GCS Data Lake bucket and BigQuery Dataset.
 
 ```bash
@@ -97,7 +85,7 @@ terraform apply
 ```
 Type `yes` when prompted.
 
-### 5. Setup dbt (Data Build Tool) Profiles
+## 5. Setup dbt (Data Build Tool) Profiles
 Airflow runs dbt commands for data transformation. You must configure the dbt connection profile to allow BigQuery access.
 
 ```bash
