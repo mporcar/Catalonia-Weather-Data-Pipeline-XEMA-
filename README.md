@@ -15,7 +15,7 @@ To address this, the project builds a modern data stack that:
 
 The result is a reproducible and automated pipeline that demonstrates core data engineering concepts such as orchestration, data modeling, and cloud-based processing.
 ## 1. Project Overview
-- **Goal**: build an end-to-end data pipeline to ingest and transform meteorological data from Catalonia (Barcelona region) using the open XEMA API: https://analisi.transparenciacatalunya.cat/resource
+- **Goal**: build an end-to-end data pipeline to ingest and transform meteorological data from Catalonia (Barcelona region) using the open XEMA API: [https://analisi.transparenciacatalunya.cat](https://analisi.transparenciacatalunya.cat)
 - **Stack**: Python, Apache Airflow, Google Cloud Storage, BigQuery, dbt, GitHub Codespaces
 
 ## 2. Architecture
