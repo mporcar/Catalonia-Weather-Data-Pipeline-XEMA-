@@ -19,5 +19,14 @@ models:
   xema_weather:
     staging:
       +materialized: view
+      stg_dim_variables:
+        +tags: ['dimensions']
+      stg_dim_stations:
+        +tags: ['dimensions']
+      stg_weather_data:
+        +tags: ['observations']
+
     core:
-      +materialized: table
+      +materialized: incremental
+      fct_weather_readings:
+        +tags: ['facts', 'minute-level']

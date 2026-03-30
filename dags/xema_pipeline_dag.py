@@ -6,7 +6,7 @@ from airflow.providers.google.cloud.transfers.gcs_to_bigquery import GCSToBigQue
 from dotenv import load_dotenv
 
 # Dynamically determine paths so it works in Codespaces without hardcoded /opt/airflow
-DAGS_FOLDER = os.path.dirname(os.path.abspath(__file__))
+DAGS_FOLDER  = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.dirname(DAGS_FOLDER)
 
 # Load local .env config to ensure credentials and IDs are populated
@@ -19,7 +19,10 @@ BQ_DATASET = os.environ.get("BQ_DATASET", "xema_weather")
 
 # Enforce secure configuration
 if not GCP_PROJECT_ID or not GCP_BUCKET_NAME:
-    raise ValueError("Missing critical environment variables: GCP_PROJECT_ID and/or GCP_BUCKET_NAME. Please ensure your .env file is loaded.")
+    raise ValueError(
+        "Missing critical environment variables: GCP_PROJECT_ID and/or GCP_BUCKET_NAME. "
+        "Please ensure your .env file is loaded."
+    )
 
 default_args = {
     'owner': 'data_engineer',
@@ -33,35 +36,87 @@ default_args = {
 with DAG(
     'xema_daily_weather_pipeline',
     default_args=default_args,
-    description='Daily ingestion of Catalonia weather data (XEMA)',
+    description='Daily ingestion of Catalonia weather data (XEMA) with dimension enrichment',
     schedule_interval='@daily',
-    start_date=datetime(2023, 1, 1),
-    catchup=False,
+    start_date=datetime(2026, 3, 1),
+    catchup=True,
     tags=['xema', 'weather', 'gcp', 'dbt'],
+    max_active_runs=3   # at most 3 days running simultaneously
 ) as dag:
 
-    # Task 1: Fetch data from XEMA API and upload to GCS Data Lake
+    # ------------------------------------------------------------------
+    # Task 1 — Fetch weather observations + both dimension tables → GCS
+    # ------------------------------------------------------------------
     ingest_to_gcs = BashOperator(
         task_id='ingest_data_to_gcs',
-        bash_command=f'python {PROJECT_ROOT}/dags/scripts/ingest_data.py --date {{{{ ds }}}} --bucket {GCP_BUCKET_NAME}',
+        bash_command=(
+            f'python {PROJECT_ROOT}/dags/scripts/ingest_data.py '
+            f'--date {{{{ ds }}}} '
+            f'--bucket {GCP_BUCKET_NAME}'
+        ),
     )
 
-    # Task 2: Load Parquet from GCS to BigQuery Native Table
-    load_to_bq = GCSToBigQueryOperator(
-        task_id='load_gcs_to_bq_staging',
+    # ------------------------------------------------------------------
+    # Task 2a — Load weather Parquet → BQ (append, partitioned by date)
+    # ------------------------------------------------------------------
+    load_weather_to_bq = GCSToBigQueryOperator(
+    task_id='load_gcs_to_bq_staging',
+    bucket=GCP_BUCKET_NAME,
+    source_objects=['raw/weather_data/{{ ds }}/data.parquet'],
+    destination_project_dataset_table=f'{GCP_PROJECT_ID}.{BQ_DATASET}.raw_weather_data${{{{ ds_nodash }}}}',
+    source_format='PARQUET',
+    write_disposition='WRITE_TRUNCATE',     # ← replaces only that day's partition
+    autodetect=True,
+    time_partitioning={'type': 'DAY', 'field': 'data_lectura'},
+)
+
+    # ------------------------------------------------------------------
+    # Task 2b — Load variables dimension → BQ (full truncate each day)
+    # ------------------------------------------------------------------
+    load_dim_variables_to_bq = GCSToBigQueryOperator(
+        task_id='load_gcs_to_bq_dim_variables',
         bucket=GCP_BUCKET_NAME,
-        source_objects=[f'raw/weather_data/{{{{ ds }}}}/data.parquet'],
-        destination_project_dataset_table=f'{GCP_PROJECT_ID}.{BQ_DATASET}.raw_weather_data',
+        source_objects=['raw/dim_variables/latest/data.parquet'],
+        destination_project_dataset_table=f'{GCP_PROJECT_ID}.{BQ_DATASET}.raw_dim_variables',
         source_format='PARQUET',
-        write_disposition='WRITE_APPEND',
+        write_disposition='WRITE_TRUNCATE',   # full-refresh: small reference table
         autodetect=True,
-        time_partitioning={'type': 'DAY', 'field': 'data_lectura'},
     )
 
-    # Task 3: Run dbt models to transform raw data
+    # ------------------------------------------------------------------
+    # Task 2c — Load stations dimension → BQ (full truncate each day)
+    # ------------------------------------------------------------------
+    load_dim_stations_to_bq = GCSToBigQueryOperator(
+        task_id='load_gcs_to_bq_dim_stations',
+        bucket=GCP_BUCKET_NAME,
+        source_objects=['raw/dim_stations/latest/data.parquet'],
+        destination_project_dataset_table=f'{GCP_PROJECT_ID}.{BQ_DATASET}.raw_dim_stations',
+        source_format='PARQUET',
+        write_disposition='WRITE_TRUNCATE',   # full-refresh: small reference table
+        autodetect=True,
+    )
+
+    # ------------------------------------------------------------------
+    # Task 3 — dbt: transform raw → staging → mart
+    # All three BQ loads must finish before dbt reads from them.
+    # ------------------------------------------------------------------
     run_dbt_models = BashOperator(
         task_id='run_dbt_transformations',
-        bash_command=f'cd {PROJECT_ROOT}/dbt_xema && dbt run --profiles-dir . && dbt test --profiles-dir .',
+        bash_command=(
+            f'cd {PROJECT_ROOT}/dbt_xema '
+            f'&& dbt run --profiles-dir . '
+            f'&& dbt test --profiles-dir .'
+        ),
     )
 
-    ingest_to_gcs >> load_to_bq >> run_dbt_models
+    # ------------------------------------------------------------------
+    # Dependency graph
+    #
+    #   ingest_to_gcs
+    #       ├── load_weather_to_bq ──────┐
+    #       ├── load_dim_variables_to_bq ├──► run_dbt_models
+    #       └── load_dim_stations_to_bq ─┘
+    # ------------------------------------------------------------------
+    ingest_to_gcs >> [load_weather_to_bq, load_dim_variables_to_bq, load_dim_stations_to_bq]
+
+    [load_weather_to_bq, load_dim_variables_to_bq, load_dim_stations_to_bq] >> run_dbt_models

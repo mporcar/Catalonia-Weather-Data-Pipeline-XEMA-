@@ -1,27 +1,50 @@
 version: 2
 
 models:
-  - name: fct_daily_weather
-    description: "Daily aggregated weather facts by station and variable. Materialized incrementally."
+  - name: fct_weather_readings
+    description: >
+      Minute-level weather readings enriched with station and variable metadata.
+      Partitioned by reading_date (for BigQuery efficiency) and includes
+      reading_timestamp for time-series analytics.
     columns:
-      - name: daily_station_var_id
-        description: "Primary key for the daily aggregate (station + var + date)"
+      - name: record_id
+        description: "Primary key — unique identifier for each minute-level reading."
         tests:
           - unique
           - not_null
-      - name: station_code
-        description: "Code of the weather station"
-      - name: variable_code
-        description: "Code of the weather variable"
       - name: reading_date
-        description: "Date of the readings"
+        description: "Calendar date — used as the BigQuery partition field."
         tests:
           - not_null
-      - name: avg_daily_value
-        description: "Average measurement for the day"
-      - name: max_daily_value
-        description: "Maximum measurement for the day"
-      - name: min_daily_value
-        description: "Minimum measurement for the day"
-      - name: reading_count
-        description: "Total number of readings aggregated"
+      - name: reading_timestamp
+        description: "Full datetime of the reading at minute granularity — use this for analytics."
+      - name: station_code
+        description: "Code of the weather station."
+        tests:
+          - not_null
+      - name: variable_code
+        description: "Code of the measured variable."
+        tests:
+          - not_null
+      - name: station_name
+        description: "Name of the station."
+      - name: municipality_name
+        description: "Municipality of the station."
+      - name: comarca_name
+        description: "Comarca of the station."
+      - name: latitude
+        description: "WGS-84 latitude."
+      - name: longitude
+        description: "WGS-84 longitude."
+      - name: altitude_m
+        description: "Station altitude in metres."
+      - name: variable_name
+        description: "Human-readable name of the measured variable."
+      - name: unit
+        description: "Unit of measurement (e.g. ºC, mm, m/s)."
+      - name: acronym
+        description: "Short acronym of the variable."
+      - name: reading_value
+        description: "Measured value at this minute."
+      - name: status_code
+        description: "Quality flag of the reading."

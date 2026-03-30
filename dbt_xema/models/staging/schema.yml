@@ -2,26 +2,130 @@ version: 2
 
 sources:
   - name: xema_raw
-    # In a real setup, avoid hardcoding project_id. We use an env var with a fallback.
-    database: "{{ env_var('GCP_PROJECT_ID', 'your-gcp-project-id') }}"
+    database: "{{ env_var('GCP_PROJECT_ID', 'catalonia-weather-data-xema') }}"
     schema: "{{ env_var('BQ_DATASET', 'xema_weather') }}"
     tables:
       - name: raw_weather_data
+        description: "Raw weather observations loaded daily from the XEMA API."
+
+      - name: raw_dim_variables
+        description: "Full-refresh daily load of meteorological variable metadata."
+        columns:
+          - name: codi_variable
+            description: "Primary key — variable code."
+            tests:
+              - unique
+              - not_null
+
+      - name: raw_dim_stations
+        description: "Full-refresh daily load of meteorological station metadata."
+        columns:
+          - name: codi_estacio
+            description: "Primary key — station code."
+            tests:
+              - unique
+              - not_null
 
 models:
   - name: stg_weather_data
-    description: "Staging model for raw XEMA weather data. Cleans types and renames columns."
+    description: "Staging model for raw XEMA weather observations. Cleans types and renames columns."
     columns:
       - name: record_id
-        description: "Unique identifier for each reading"
+        description: "Unique identifier for each reading."
         tests:
           - unique
           - not_null
       - name: station_code
-        description: "Code of the weather station"
+        description: "Code of the weather station."
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_dim_stations')
+                field: station_code
       - name: variable_code
-        description: "Code of the measured variable (e.g., Temperature, Wind)"
+        description: "Code of the measured variable (e.g. temperature, wind speed)."
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_dim_variables')
+                field: variable_code
       - name: reading_timestamp
-        description: "Timestamp of the reading"
+        description: "Full timestamp of the reading."
+      - name: reading_date
+        description: "Calendar date derived from reading_timestamp."
       - name: reading_value
-        description: "Value of the meteorological variable"
+        description: "Numeric value of the meteorological measurement."
+      - name: status_code
+        description: "Quality/status flag of the reading."
+      - name: base_code
+        description: "Base code associated with the measurement."
+
+  - name: stg_dim_variables
+    description: "Staging view over raw_dim_variables. Normalises types and renames columns."
+    columns:
+      - name: variable_code
+        description: "Primary key — meteorological variable code."
+        tests:
+          - unique
+          - not_null
+      - name: variable_name
+        description: "Human-readable name of the variable."
+        tests:
+          - not_null
+      - name: unit
+        description: "Unit of measurement (e.g. ºC, mm, m/s)."
+      - name: acronym
+        description: "Short acronym used in displays."
+      - name: variable_type_code
+        description: "Code classifying the type of variable (from codi_tipus_var)."
+      - name: decimal_places
+        description: "Number of decimal places for the measurement."
+
+  - name: stg_dim_stations
+    description: "Staging view over raw_dim_stations. Normalises types and renames columns."
+    columns:
+      - name: station_code
+        description: "Primary key — meteorological station code."
+        tests:
+          - unique
+          - not_null
+      - name: station_name
+        description: "Full name of the station."
+        tests:
+          - not_null
+      - name: station_type_code
+        description: "Code for the station type (from codi_tipus)."
+      - name: location_description
+        description: "Free-text description of the station's physical location (emplacament)."
+      - name: latitude
+        description: "WGS-84 latitude."
+      - name: longitude
+        description: "WGS-84 longitude."
+      - name: altitude_m
+        description: "Station altitude above sea level in metres."
+      - name: municipality_code
+        description: "Numeric code of the municipality."
+      - name: municipality_name
+        description: "Name of the municipality."
+      - name: comarca_code
+        description: "Numeric code of the comarca."
+      - name: comarca_name
+        description: "Name of the comarca."
+      - name: province_code
+        description: "Numeric code of the province."
+      - name: province_name
+        description: "Name of the province."
+      - name: network_code
+        description: "Code of the observation network."
+      - name: network_name
+        description: "Name of the observation network."
+      - name: status_code
+        description: "Operational status code of the station (codi_estat_ema)."
+      - name: status_name
+        description: "Human-readable operational status (nom_estat_ema)."
+      - name: operational_start_date
+        description: "Date the station became operational (data_inici)."
+      - name: operational_end_date
+        description: "Date the station was decommissioned, null if still active (data_fi)."

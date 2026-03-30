@@ -20,7 +20,7 @@
       ]
     }
   },
-  "postCreateCommand": "bash .devcontainer/setup_auth.sh && pip install --no-cache-dir -r dags/scripts/requirements.txt && cd terraform && terraform init",
-  "postStartCommand": "airflow db init || echo 'Airflow DB already initialized'",
+  "postCreateCommand": "bash .devcontainer/setup_auth.sh && pip install --no-cache-dir -r dags/scripts/requirements.txt && cd terraform && terraform init && curl https://sdk.cloud.google.com | bash && exec -l $SHELL",
+ "postStartCommand": ".devcontainer/setup_auth.sh && airflow db init || echo 'Airflow DB already initialized'",
   "remoteUser": "vscode"
 }
