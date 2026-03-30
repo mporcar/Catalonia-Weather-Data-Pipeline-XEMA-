@@ -1,5 +1,19 @@
 # Catalonia Weather Data Pipeline (XEMA)
+This project was developed as the final project for the [DataTalksClub](https://datatalks.club/) [Data Engineering Zoomcamp](https://github.com/DataTalksClub/data-engineering-zoomcamp/tree/main), an intensive hands-on program focused on building real-world data platforms.
 
+The goal of the project is to design and implement an end-to-end data pipeline that continuously ingests and processes meteorological data from Catalonia, using open data provided by the Generalitat de Catalunya through its public data portal.
+
+Weather data is generated constantly and can be highly valuable for analysis, monitoring, and decision-making. However, working with this data presents several challenges: it is distributed across APIs, arrives in raw formats, and requires transformation to be useful for analytics.
+
+To address this, the project builds a modern data stack that:
+
+- Extracts raw weather data from the XEMA API
+- Stores it in a scalable data lake
+- Loads it into a data warehouse
+- Transforms it into analytics-ready models
+- Enables visualization and insights through dashboards
+
+The result is a reproducible and automated pipeline that demonstrates core data engineering concepts such as orchestration, data modeling, and cloud-based processing.
 ## 1. Project Overview
 - **Goal**: build an end-to-end data pipeline to ingest and transform meteorological data from Catalonia (Barcelona region) using the open XEMA API: https://analisi.transparenciacatalunya.cat/resource
 - **Stack**: Python, Apache Airflow, Google Cloud Storage, BigQuery, dbt, GitHub Codespaces
