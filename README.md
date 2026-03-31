@@ -40,7 +40,7 @@ XEMA API → ingest_data.py → GCS (Data Lake)
 - **Core**: `fct_weather_readings` (minute-level, partitioned), `fct_daily_weather` (daily aggregates, lean)
 
 ## Dashboard
-![Dashboard](./dashboard.png)
+![Dashboard](dashboard.png)
 
 [Dashboard](https://lookerstudio.google.com/reporting/60d47c01-1d29-480f-bf9b-0ff7a74127d6)
 
